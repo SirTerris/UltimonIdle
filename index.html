@@ -540,7 +540,7 @@ function getNextLevelExp(level,variantName){ const base=25+level*18; const mult=
 function getMonsterRarityRank(mon){
   if(!mon) return 1;
   var v = getVariant(mon);
-  return (v && v.rarityRank) ? v.rarityRank : 1;
+  return mon.rarity || 1;
 }
 function getTeamHighestRarityRank(team){
   if(!team || !team.length) return 1;
