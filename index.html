@@ -112,10 +112,12 @@
   <header>
     <h1>Ultimon Idle</h1>
     <div class="header-buttons">
-      <button id="reset-btn">Reset Gigantic Save</button>
+      <button id="reset-btn">Reset Save</button>
       <button id="export-btn">Export Save</button>
       <label for="import-file" class="import-label">Import Save</label>
       <input type="file" id="import-file" accept="application/json" style="display:none">
+      <button id="cloud-save-btn">Save to Cloud</button>
+      <button id="cloud-load-btn">Load from Cloud</button>
     </div>
   </header>
 
@@ -207,6 +209,15 @@
       <button onclick="setStorageSort('levelAsc')">Level ↑</button>
       <button onclick="setStorageSort('totalDesc')">Total Stats ↓</button>
       <button onclick="setStorageSort('totalAsc')">Total Stats ↑</button>
+      · Stats:
+      <button onclick="setStorageSort('hpDesc')">HP ↓</button>
+      <button onclick="setStorageSort('hpAsc')">HP ↑</button>
+      <button onclick="setStorageSort('atkDesc')">Atk ↓</button>
+      <button onclick="setStorageSort('atkAsc')">Atk ↑</button>
+      <button onclick="setStorageSort('defDesc')">Def ↓</button>
+      <button onclick="setStorageSort('defAsc')">Def ↑</button>
+      <button onclick="setStorageSort('spdDesc')">Spd ↓</button>
+      <button onclick="setStorageSort('spdAsc')">Spd ↑</button>
     </p>
     <div id="storage-list"></div>
   </section>
@@ -228,16 +239,17 @@
 
   <section id="shop-section" style="display:none;">
     <h2>Shop</h2>
-    <p>Potion – <strong>50</strong> coins <button onclick="buyItem('potion')">Buy</button></p>
-    <p>Basic Orb – <strong>100</strong> coins <button onclick="buyItem('orbBasic')">Buy</button></p>
-    <p>Great Orb – <strong>300</strong> coins <button onclick="buyItem('orbGreat')">Buy</button></p>
-    <p>Ultra Orb – <strong>800</strong> coins <button onclick="buyItem('orbUltra')">Buy</button></p>
-    <p>Ultimate Orb – <strong>5000</strong> coins <button onclick="buyItem('orbUltimate')">Buy</button></p>
+    <p>Potion – <strong>200</strong> coins <button onclick="buyItem('potion')">Buy</button></p>
+    <p>Basic Orb – <strong>400</strong> coins <button onclick="buyItem('orbBasic')">Buy</button></p>
+    <p>Great Orb – <strong>1500</strong> coins <button onclick="buyItem('orbGreat')">Buy</button></p>
+    <p>Ultra Orb – <strong>4000</strong> coins <button onclick="buyItem('orbUltra')">Buy</button></p>
+    <p>Ultimate Orb – <strong>25000</strong> coins <button onclick="buyItem('orbUltimate')">Buy</button></p>
   </section>
 
   <section id="dex-section" style="display:none;">
     <h2>Dex</h2>
     <p class="small-label" id="dex-summary"></p>
+    <p class="small-label" id="rarity-summary"></p>
     <div id="dex-toggle" class="small-label" style="margin-bottom:6px;">
       <label><input type="checkbox" id="dex-owned-only"> Show owned monsters only</label>
     </div>
@@ -254,28 +266,30 @@
 <script>
 const STORAGE_KEY = "ultimon_idle_save_v1";
 
-const VARIANTS = {
+var VARIANTS = {
   Normal:{name:"Normal",encounterWeight:1000,hpMult:1,atkMult:1,defMult:1,spdMult:1,prefix:"",emoji:"",rarityRank:1},
-  Shiny:{name:"Shiny",encounterWeight:180,hpMult:1.05,atkMult:1.05,defMult:1.05,spdMult:1.05,prefix:"★ ",emoji:"✨",rarityRank:2},
-  Dark:{name:"Dark",encounterWeight:140,hpMult:1.05,atkMult:1.08,defMult:1.02,spdMult:1,prefix:"☾ ",emoji:"",rarityRank:3},
-  Metallic:{name:"Metallic",encounterWeight:120,hpMult:1.04,atkMult:1,defMult:1.1,spdMult:.98,prefix:"◇ ",emoji:"",rarityRank:4},
-  Mystic:{name:"Mystic",encounterWeight:100,hpMult:1.03,atkMult:1.03,defMult:1.03,spdMult:1.07,prefix:"✦ ",emoji:"",rarityRank:5},
-  Crystal:{name:"Crystal",encounterWeight:80,hpMult:1.08,atkMult:1.02,defMult:1.08,spdMult:1,prefix:"❖ ",emoji:"",rarityRank:6},
-  Shadow:{name:"Shadow",encounterWeight:60,hpMult:1.02,atkMult:1.1,defMult:1.02,spdMult:1.05,prefix:"☠ ",emoji:"",rarityRank:7},
-  Radiant:{name:"Radiant",encounterWeight:45,hpMult:1.06,atkMult:1.06,defMult:1.06,spdMult:1.06,prefix:"☼ ",emoji:"",rarityRank:8},
-  Void:{name:"Void",encounterWeight:35,hpMult:1.04,atkMult:1.12,defMult:1.04,spdMult:1.08,prefix:"⊘ ",emoji:"",rarityRank:9},
-  Neon:{name:"Neon",encounterWeight:30,hpMult:1.03,atkMult:1.09,defMult:1.03,spdMult:1.12,prefix:"¤ ",emoji:"",rarityRank:10},
-  Pastel:{name:"Pastel",encounterWeight:26,hpMult:1.09,atkMult:1.03,defMult:1.09,spdMult:1.03,prefix:"♡ ",emoji:"",rarityRank:11},
-  Toxic:{name:"Toxic",encounterWeight:22,hpMult:1.05,atkMult:1.13,defMult:1.05,spdMult:1.05,prefix:"☣ ",emoji:"",rarityRank:12},
-  Gilded:{name:"Gilded",encounterWeight:18,hpMult:1.12,atkMult:1.08,defMult:1.12,spdMult:1.04,prefix:"⚜ ",emoji:"",rarityRank:13},
-  Cosmic:{name:"Cosmic",encounterWeight:14,hpMult:1.1,atkMult:1.12,defMult:1.1,spdMult:1.1,prefix:"✺ ",emoji:"⭐",rarityRank:14},
-  Divine:{name:"Divine",encounterWeight:10,hpMult:1.15,atkMult:1.15,defMult:1.15,spdMult:1.15,prefix:"✙ ",emoji:"✨",rarityRank:15},
-  Prismatic:{name:"Prismatic",encounterWeight:8,hpMult:1.14,atkMult:1.12,defMult:1.12,spdMult:1.12,prefix:"◆ ",emoji:"🌈",rarityRank:16},
-  Phantom:{name:"Phantom",encounterWeight:6,hpMult:1.08,atkMult:1.16,defMult:1.06,spdMult:1.14,prefix:"🝐 ",emoji:"",rarityRank:17},
-  Aurora:{name:"Aurora",encounterWeight:4,hpMult:1.16,atkMult:1.1,defMult:1.1,spdMult:1.16,prefix:"☽ ",emoji:"",rarityRank:18},
-  Relic:{name:"Relic",encounterWeight:3,hpMult:1.18,atkMult:1.14,defMult:1.16,spdMult:1.08,prefix:"⛀ ",emoji:"",rarityRank:19},
-  Mythic:{name:"Mythic",encounterWeight:2,hpMult:1.2,atkMult:1.2,defMult:1.2,spdMult:1.2,prefix:"♛ ",emoji:"",rarityRank:20}
+  Shiny:{name:"Shiny",encounterWeight:180,hpMult:1.1,atkMult:1.1,defMult:1.1,spdMult:1.1,prefix:"★ ",emoji:"✨",rarityRank:2},
+  Dark:{name:"Dark",encounterWeight:140,hpMult:1.1,atkMult:1.15,defMult:1.05,spdMult:1,prefix:"☾ ",emoji:"",rarityRank:3},
+  Metallic:{name:"Metallic",encounterWeight:120,hpMult:1.08,atkMult:1.02,defMult:1.18,spdMult:0.96,prefix:"◇ ",emoji:"",rarityRank:4},
+  Mystic:{name:"Mystic",encounterWeight:100,hpMult:1.08,atkMult:1.08,defMult:1.08,spdMult:1.12,prefix:"✦ ",emoji:"",rarityRank:5},
+  Crystal:{name:"Crystal",encounterWeight:80,hpMult:1.15,atkMult:1.05,defMult:1.15,spdMult:1,prefix:"❖ ",emoji:"",rarityRank:6},
+  Shadow:{name:"Shadow",encounterWeight:60,hpMult:1.05,atkMult:1.18,defMult:1.05,spdMult:1.1,prefix:"☠ ",emoji:"",rarityRank:7},
+  Radiant:{name:"Radiant",encounterWeight:45,hpMult:1.15,atkMult:1.15,defMult:1.15,spdMult:1.15,prefix:"☼ ",emoji:"",rarityRank:8},
+  Void:{name:"Void",encounterWeight:35,hpMult:1.05,atkMult:1.22,defMult:1.05,spdMult:1.15,prefix:"⊘ ",emoji:"",rarityRank:9},
+  Neon:{name:"Neon",encounterWeight:30,hpMult:1.05,atkMult:1.18,defMult:1.05,spdMult:1.2,prefix:"¤ ",emoji:"",rarityRank:10},
+  Pastel:{name:"Pastel",encounterWeight:26,hpMult:1.18,atkMult:1.05,defMult:1.18,spdMult:1.08,prefix:"♡ ",emoji:"",rarityRank:11},
+  Toxic:{name:"Toxic",encounterWeight:22,hpMult:1.1,atkMult:1.24,defMult:1.1,spdMult:1.1,prefix:"☣ ",emoji:"",rarityRank:12},
+  Gilded:{name:"Gilded",encounterWeight:18,hpMult:1.22,atkMult:1.16,defMult:1.22,spdMult:1.08,prefix:"⚜ ",emoji:"",rarityRank:13},
+  Cosmic:{name:"Cosmic",encounterWeight:14,hpMult:1.2,atkMult:1.22,defMult:1.2,spdMult:1.2,prefix:"✺ ",emoji:"⭐",rarityRank:14},
+  Divine:{name:"Divine",encounterWeight:10,hpMult:1.3,atkMult:1.3,defMult:1.3,spdMult:1.3,prefix:"✙ ",emoji:"✨",rarityRank:15},
+  Prismatic:{name:"Prismatic",encounterWeight:8,hpMult:1.28,atkMult:1.24,defMult:1.24,spdMult:1.24,prefix:"◆ ",emoji:"🌈",rarityRank:16},
+  Phantom:{name:"Phantom",encounterWeight:6,hpMult:1.12,atkMult:1.3,defMult:1.1,spdMult:1.28,prefix:"🝐 ",emoji:"",rarityRank:17},
+  Aurora:{name:"Aurora",encounterWeight:4,hpMult:1.3,atkMult:1.2,defMult:1.2,spdMult:1.32,prefix:"☽ ",emoji:"",rarityRank:18},
+  Relic:{name:"Relic",encounterWeight:3,hpMult:1.34,atkMult:1.26,defMult:1.28,spdMult:1.18,prefix:"⛀ ",emoji:"",rarityRank:19},
+  Mythic:{name:"Mythic",encounterWeight:2,hpMult:1.4,atkMult:1.4,defMult:1.4,spdMult:1.4,prefix:"♛ ",emoji:"",rarityRank:20}
 };
+window.VARIANTS = VARIANTS;
+
 const VARIANT_KEYS = Object.keys(VARIANTS);
 
 const MOVES = {
@@ -495,7 +509,15 @@ function randomChoice(arr){return arr[Math.floor(Math.random()*arr.length)];}
 function logMessage(text){ const log=document.getElementById("log"); const div=document.createElement("div"); div.className="log-line"; div.textContent=text; log.appendChild(div); log.scrollTop=log.scrollHeight; }
 
 function getSpeciesById(id){return MONSTERS.find(m=>m.id===id);}
-function getSpecies(mon){return getSpeciesById(mon.speciesId);}
+
+
+function getSpecies(mon){
+    if(!mon) return null;
+    if(!mon.speciesId && mon.species) mon.speciesId = mon.species;
+    return getSpeciesById(mon.speciesId);
+}
+
+
 function getVariant(mon){return VARIANTS[mon.variant||"Normal"]||VARIANTS.Normal;}
 
 function getActiveMonster() {
@@ -514,6 +536,33 @@ function getStatTotal(mon){ return getMaxHP(mon)+getAttack(mon)+getDefense(mon)+
 
 function getVariantExpMultiplier(variantName){ const v=VARIANTS[variantName]||VARIANTS.Normal; const r=v.rarityRank||1; return Math.pow(2,r-1); }
 function getNextLevelExp(level,variantName){ const base=25+level*18; const mult=getVariantExpMultiplier(variantName||"Normal"); return Math.round(base*mult); }
+
+function getMonsterRarityRank(mon){
+  if(!mon) return 1;
+  var v = getVariant(mon);
+  return (v && v.rarityRank) ? v.rarityRank : 1;
+}
+function getTeamHighestRarityRank(team){
+  if(!team || !team.length) return 1;
+  var maxRank = 1;
+  for(var i=0;i<team.length;i++){
+    var r = getMonsterRarityRank(team[i]);
+    if(r > maxRank) maxRank = r;
+  }
+  return maxRank;
+}
+function grantWildBattleRewards(){
+  if(!battle || !battle.wild || !gameState || !gameState.player) return;
+  var wildMon = battle.wild;
+  var rarityRank = getMonsterRarityRank(wildMon);
+  var level = wildMon.level || 1;
+
+  var baseCoins = 3 + Math.floor(level * (0.4 + 0.04 * (rarityRank-1)));
+  if(baseCoins < 1) baseCoins = 1;
+  gameState.player.money = (gameState.player.money || 0) + baseCoins;
+
+  grantBattleLoot("wild", rarityRank);
+}
 function getTrainerNextLevelExp(level){ return 120+level*80; }
 
 function addTrainerExp(amount){
@@ -553,7 +602,16 @@ function createMonsterInstance(speciesId,level,variantKey){
   const mon={ speciesId:s.id, nickname:null, level:lvl, exp:0, variant:variant, hp:0, moves:(s.moves||["tackle"]).slice(0,4), hpBonus:0,atkBonus:0,defBonus:0,spdBonus:0 };
   ensureMonsterMoves(mon); mon.hp=getMaxHP(mon); return mon;
 }
-function getMonDisplayName(mon){ const s=getSpecies(mon),v=getVariant(mon); const base=mon.nickname||s.name; return (v.name==="Normal")?base:(v.prefix+base); }
+
+function getMonDisplayName(mon){
+  const s = getSpecies(mon);
+  if(!s) return "???";
+  const v = getVariant(mon);
+  const base = s.name;
+  if(!v || v.name === "Normal") return base;
+  return (v.prefix || "") + base;
+}
+
 
 function getTypeBaseHue(type){
   switch(type){
@@ -670,20 +728,24 @@ function getUniqueFormsRatio(){
   }
 }
 
+
 function getAutoIntervalMs(){
-  if(!gameState || !gameState.trainer) return 8000;
-  const lv = gameState.trainer.level || 1;
-  const ratio = getUniqueFormsRatio();
-  const lvFactor = Math.min(lv,200)/200;
+  if (!gameState || !gameState.trainer) return 75000;
+  const lvRaw = gameState.trainer.level || 1;
+  const lv = Math.max(1, lvRaw);
+  const ratio = getUniqueFormsRatio(); 
 
-  const speed = 0.25 + lvFactor*0.9 + ratio*1.2;
-  const base = 9000;
+  const BASE = 75000; 
+  const A = 0.01;
+  const B = 0.5;
 
-  let interval = base / speed;
-  if(interval < 1500) interval = 1500;
-  if(interval > 10000) interval = 10000;
-  return interval;
+  const levelFactor = Math.pow(1 + lv * A, B);
+  const dexFactor = 1 + ratio; // option B: dex contributes multiplicatively
+
+  const speed = levelFactor * dexFactor;
+  return BASE / speed;
 }
+
 
 function startIdleProgress(durationMs){
   const fill = document.getElementById("idle-progress-fill");
@@ -815,7 +877,9 @@ function syncAutoUI(){
   scheduleNextAutoTick();
 }
 
+
 function grantTrainerBattleRewards(){
+  if (typeof ensureInventory === "function") ensureInventory();
   const p = gameState.player;
   const inv = gameState.inventory;
   if(!p || !inv) return;
@@ -825,21 +889,17 @@ function grantTrainerBattleRewards(){
   const coinGain = 20 + lv * 5;
   p.money = (p.money || 0) + coinGain;
 
-  const roll = Math.random();
-  if(roll < 0.25){
-    inv.potion = (inv.potion || 0) + 1;
-  }else if(roll < 0.45){
-    inv.orbBasic = (inv.orbBasic || 0) + 1;
-  }else if(roll < 0.55){
-    inv.xpChip = (inv.xpChip || 0) + 1;
+  var rarityRank = 1;
+  try{
+    if(battle && battle.trainerTeam && battle.trainerTeam.length){
+      rarityRank = getTeamHighestRarityRank(battle.trainerTeam);
+    }
+  }catch(e){
+    console.error(e);
   }
-
-  const coreRoll = Math.random();
-  if(coreRoll < 0.02)       inv.hpCore  = (inv.hpCore  || 0) + 1;
-  else if(coreRoll < 0.04)  inv.atkCore = (inv.atkCore || 0) + 1;
-  else if(coreRoll < 0.06)  inv.defCore = (inv.defCore || 0) + 1;
-  else if(coreRoll < 0.08)  inv.spdCore = (inv.spdCore || 0) + 1;
+  grantBattleLoot("trainer", rarityRank);
 }
+
 
 function applyOfflineTrainerReward(){
   const p = gameState.player;
@@ -1012,6 +1072,188 @@ function importSave(file){
   reader.readAsText(file);
 }
 
+// --------- Cloud save via GitHub Gist ---------
+const CLOUD_TOKEN_KEY = "ultimon_cloud_github_token";
+const CLOUD_GIST_KEY  = "ultimon_cloud_gist_id";
+
+let cloudAutosaveTimer = null;
+
+function encodeToken(t){
+  try { return btoa(t); } catch(e){ return t; }
+}
+function decodeToken(t){
+  if(!t) return null;
+  try { return atob(t); } catch(e){ return t; }
+}
+
+// Ask for a GitHub PAT token if we don't have one yet
+async function requireGithubToken(){
+  let stored = localStorage.getItem(CLOUD_TOKEN_KEY);
+  if(stored){
+    const decoded = decodeToken(stored);
+    if(decoded) return decoded;
+  }
+  const token = prompt("Enter your GitHub Personal Access Token (with 'gist' scope) for Ultimon cloud saves:");
+  if(!token) return null;
+  localStorage.setItem(CLOUD_TOKEN_KEY, encodeToken(token.trim()));
+  return token.trim();
+}
+
+function getStoredGistId(){
+  return localStorage.getItem(CLOUD_GIST_KEY) || null;
+}
+
+function setStoredGistId(id){
+  localStorage.setItem(CLOUD_GIST_KEY, id);
+}
+
+// Start autosave every 5 minutes (only if token + gist known)
+function startCloudAutosave(){
+  if(cloudAutosaveTimer){ clearInterval(cloudAutosaveTimer); cloudAutosaveTimer = null; }
+  const hasToken = !!localStorage.getItem(CLOUD_TOKEN_KEY);
+  const hasGist  = !!localStorage.getItem(CLOUD_GIST_KEY);
+  if(!hasToken || !hasGist) return;
+
+  cloudAutosaveTimer = setInterval(function(){
+    cloudSave(false);
+  }, 5 * 60 * 1000);
+}
+
+async function cloudSave(manual){
+  if(!gameState){
+    if(manual) alert("No save data to upload.");
+    return;
+  }
+
+  const token = await requireGithubToken();
+  if(!token){
+    if(manual) alert("Cloud save cancelled (no token).");
+    return;
+  }
+
+  const dataStr = JSON.stringify(gameState);
+  const gistId  = getStoredGistId();
+
+  try{
+    if(!gistId){
+      // Create new gist
+      const resp = await fetch("https://api.github.com/gists", {
+        method: "POST",
+        headers: {
+          "Authorization": "token " + token,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          description: "Ultimon Idle cloud save",
+          public: false,
+          files: {
+            "ultimon_idle_save.json": {
+              content: dataStr
+            }
+          }
+        })
+      });
+      if(!resp.ok) throw new Error("GitHub API error: " + resp.status);
+      const json = await resp.json();
+      if(json && json.id){
+        setStoredGistId(json.id);
+        startCloudAutosave();
+        logMessage("Created new cloud save gist.");
+        if(manual) alert("Cloud save created and uploaded.");
+      } else {
+        throw new Error("No gist id returned.");
+      }
+    } else {
+      // Update existing gist
+      const resp = await fetch("https://api.github.com/gists/" + gistId, {
+        method: "PATCH",
+        headers: {
+          "Authorization": "token " + token,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          files: {
+            "ultimon_idle_save.json": {
+              content: dataStr
+            }
+          }
+        })
+      });
+      if(!resp.ok) throw new Error("GitHub API error: " + resp.status);
+      if(manual) alert("Cloud save updated.");
+      logMessage("Cloud save updated to gist " + gistId + ".");
+    }
+  }catch(e){
+    console.error(e);
+    if(manual) alert("Cloud save failed: " + e.message);
+    logMessage("Cloud save failed: " + e.message);
+  }
+}
+
+async function cloudLoad(){
+  const storedToken = localStorage.getItem(CLOUD_TOKEN_KEY);
+  const storedGist  = getStoredGistId();
+
+  if(!storedToken || !storedGist){
+    alert("No cloud save info found. You need to Save to Cloud at least once on this browser.");
+    return;
+  }
+
+  const token = decodeToken(storedToken);
+  try{
+    const resp = await fetch("https://api.github.com/gists/" + storedGist, {
+      method: "GET",
+      headers: {
+        "Authorization": "token " + token,
+        "Accept": "application/vnd.github+json"
+      }
+    });
+    if(!resp.ok) throw new Error("GitHub API error: " + resp.status);
+    const json = await resp.json();
+    if(!json.files || !json.files["ultimon_idle_save.json"]){
+      throw new Error("Cloud save file not found in gist.");
+    }
+    const content = json.files["ultimon_idle_save.json"].content;
+    const data = JSON.parse(content);
+
+    if(!data.player || !Array.isArray(data.player.party) || !data.inventory){
+      throw new Error("Cloud data does not look like a valid save.");
+    }
+
+    migrateInventory(data.inventory);
+    if(!data.player.storage) data.player.storage = [];
+    if(!data.trainer) data.trainer = { level:1, exp:0 };
+    if(data.player.activeIndex == null) data.player.activeIndex = 0;
+
+    data.player.party.forEach(function(m){ ensureMonsterMoves(m); ensureMonBonuses(m); });
+    data.player.storage.forEach(function(m){ ensureMonsterMoves(m); ensureMonBonuses(m); });
+
+    data.lastSeen = Date.now();
+    if(!data.auto) data.auto = { train:false, trainers:false };
+    if(data.auto.train == null) data.auto.train = false;
+    if(data.auto.trainers == null) data.auto.trainers = false;
+
+    gameState = data;
+    battle = { active:false, isTrainer:false, wild:null, trainerTeam:[], playerIndex:gameState.player.activeIndex, trainerIndex:0, participants:[] };
+
+    saveGame();
+    renderAll();
+    syncAutoUI();
+    startCloudAutosave();
+
+    logMessage("Cloud save loaded from gist " + storedGist + ".");
+    alert("Cloud save loaded successfully.");
+  }catch(e){
+    console.error(e);
+    alert("Failed to load cloud save: " + e.message);
+    logMessage("Cloud load failed: " + e.message);
+  }
+}
+
+
+
 function hasCurrentVariant(speciesId,variantKey){
   const v=variantKey||"Normal";
   const p=gameState.player.party, box=gameState.player.storage;
@@ -1175,16 +1417,36 @@ function renderStorage(){
   const storage=gameState.player.storage.slice();
   const dexId=function(m){return getSpecies(m).id;};
   storage.sort(function(a,b){
-    const sa=dexId(a),sb=dexId(b);
-    const la=a.level,lb=b.level;
-    const ta=getStatTotal(a),tb=getStatTotal(b);
+    const sa = dexId(a), sb = dexId(b);
+    const la = a.level, lb = b.level;
+    const ta = getStatTotal(a), tb = getStatTotal(b);
+
+    const ha = getMaxHP(a), hb = getMaxHP(b);
+    const aa = getAttack(a), ab = getAttack(b);
+    const da = getDefense(a), db = getDefense(b);
+    const pa = getSpeed(a),   pb = getSpeed(b);
+
     switch(storageSortMode){
-      case "levelDesc":return lb-la||sa-sb;
-      case "levelAsc":return la-lb||sa-sb;
-      case "totalDesc":return tb-ta||sa-sb;
-      case "totalAsc":return ta-tb||sa-sb;
+      case "levelDesc": return lb - la || sa - sb;
+      case "levelAsc":  return la - lb || sa - sb;
+
+      case "totalDesc": return tb - ta || sa - sb;
+      case "totalAsc":  return ta - tb || sa - sb;
+
+      case "hpDesc":    return hb - ha || sa - sb;
+      case "hpAsc":     return ha - hb || sa - sb;
+
+      case "atkDesc":   return ab - aa || sa - sb;
+      case "atkAsc":    return aa - ab || sa - sb;
+
+      case "defDesc":   return db - da || sa - sb;
+      case "defAsc":    return da - db || sa - sb;
+
+      case "spdDesc":   return pb - pa || sa - sb;
+      case "spdAsc":    return pa - pb || sa - sb;
+
       case "dex":
-      default:return sa-sb;
+      default:          return sa - sb;
     }
   });
   if(storage.length===0){
@@ -1316,7 +1578,10 @@ function renderDex(){
   var uniqueFormsOwned = 0;
   for (const sid in dexSnapshot) {
     const variants = dexSnapshot[sid];
-    for (const vKey in variants) { uniqueFormsOwned++; ownedVariantCopies += variants[vKey].owned; }
+    for (const vKey in variants) {
+      uniqueFormsOwned++;
+      ownedVariantCopies += variants[vKey].owned;
+    }
   }
 
   const speciesPercent = totalSpecies ? (ownedSpeciesCount / totalSpecies * 100).toFixed(2) : "0.00";
@@ -1327,31 +1592,71 @@ function renderDex(){
     "Unique forms: " + uniqueFormsOwned + "/" + totalForms + " (" + formsPercent + "%) · " +
     "Owned monsters (copies): " + ownedVariantCopies;
 
-  visibleSpecies.forEach(function(s){
-    const entry = document.createElement("div"); entry.className = "dex-entry";
+  // Rarity legend
+  var raritySpan = document.getElementById("rarity-summary");
+  if (raritySpan && typeof VARIANTS === "object") {
+    const entries = Object.keys(VARIANTS).map(function(key){
+      const v = VARIANTS[key];
+      return { name: v.name || key, rank: v.rarityRank || 0 };
+    }).sort(function(a,b){ return a.rank - b.rank; });
 
-    const hdr = document.createElement("div"); hdr.className = "dex-header-line";
-    const left = document.createElement("div"); left.className = "dex-header-left";
-    const canvas = document.createElement("canvas"); canvas.className = "dex-icon"; canvas.dataset.speciesId = s.id; canvas.dataset.variant = "Normal"; left.appendChild(canvas);
-    const nameSpan = document.createElement("span"); nameSpan.textContent = "#" + s.id + " " + s.name + " (" + s.type + ")"; left.appendChild(nameSpan);
+    const txt = entries.map(function(e){
+      return e.name + " (R" + e.rank + ")";
+    }).join(" · ");
+
+    raritySpan.textContent = "Variant rarity tiers: " + txt;
+  }
+
+  visibleSpecies.forEach(function(s){
+    const entry = document.createElement("div");
+    entry.className = "dex-entry";
+
+    const hdr = document.createElement("div");
+    hdr.className = "dex-header-line";
+
+    const left = document.createElement("div");
+    left.className = "dex-header-left";
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "monster-icon";
+    canvas.width = 32; canvas.height = 32;
+    canvas.dataset.speciesId = s.id;
+    canvas.dataset.variant = "Normal";
+    left.appendChild(canvas);
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = "#" + s.id + " " + s.name + " (" + s.type + ")";
+    left.appendChild(nameSpan);
     hdr.appendChild(left);
 
     const right = document.createElement("div");
-    if (s.isLegendary) { const tag = document.createElement("span"); tag.className = "legendary-tag"; tag.textContent = "Legendary"; right.appendChild(tag); }
+    if (s.isLegendary) {
+      const tag = document.createElement("span");
+      tag.className = "legendary-tag";
+      tag.textContent = "Legendary";
+      right.appendChild(tag);
+    }
     hdr.appendChild(right);
 
     entry.appendChild(hdr);
 
-    const varRow = document.createElement("div"); varRow.className = "dex-variants";
+    const varRow = document.createElement("div");
+    varRow.className = "dex-variants";
+
     const ownedVariants = dexSnapshot[s.id];
     if (ownedVariants) {
       Object.keys(ownedVariants).forEach(function(key){
-        const vInfo = VARIANTS[key] || { name: key };
-        const pill = document.createElement("span"); pill.className = "dex-variant owned"; pill.textContent = vInfo.name + " x" + ownedVariants[key].owned;
+        const vInfo = VARIANTS[key] || { name: key, rarityRank: 0 };
+        const rank = vInfo.rarityRank || 0;
+        const pill = document.createElement("span");
+        pill.className = "dex-variant owned";
+        pill.textContent = vInfo.name + " (R" + rank + ") x" + ownedVariants[key].owned;
         varRow.appendChild(pill);
       });
     } else {
-      const pill = document.createElement("span"); pill.className = "dex-variant"; pill.textContent = "No variants owned yet";
+      const pill = document.createElement("span");
+      pill.className = "dex-variant";
+      pill.textContent = "No variants owned yet";
       varRow.appendChild(pill);
     }
 
@@ -1361,6 +1666,7 @@ function renderDex(){
 
   refreshIcons();
 }
+
 
 function renderBattle(){
   const sec=document.getElementById("battle-section");
@@ -1384,7 +1690,8 @@ function renderBattle(){
   const pHpPct=Math.max(0,Math.min(100,(playerMon.hp/getMaxHP(playerMon))*100));
   pHpInner.style.width=pHpPct+"%"; pHpInner.style.background=pHpPct<25?"#ef4444":pHpPct<50?"#f59e0b":"#22c55e";
   const pHpTxt=document.createElement("div"); pHpTxt.className="hp-bar-text"; pHpTxt.textContent=playerMon.hp+"/"+getMaxHP(playerMon);
-  pHp.appendChild(pHpInner); pHp.appendChild(pHpTxt); pInner.appendChild(pRight); pDiv.appendChild(pInner); monRow.appendChild(pDiv);
+  pHp.appendChild(pHpInner); pHp.appendChild(pHpTxt); pInner.appendChild(pRight); pDiv.appendChild(pHp);
+        pDiv.appendChild(pInner); monRow.appendChild(pDiv);
 
   const eDiv=document.createElement("div"); eDiv.className="battle-mon";
   const eInner=document.createElement("div"); eInner.className="battle-mon-inner";
@@ -1424,6 +1731,27 @@ function renderBattle(){
   side.appendChild(switchBox);
 
   actions.appendChild(movesDiv); actions.appendChild(side); sec.appendChild(actions);
+
+  // Battle XP bar for active monster
+  const xpWrap = document.createElement("div");
+  xpWrap.className = "battle-xp-wrapper";
+  const xpBar = document.createElement("div");
+  xpBar.className = "xp-bar";
+  const xpInner = document.createElement("div");
+  xpInner.className = "xp-bar-inner";
+  const xpText = document.createElement("div");
+  xpText.className = "mon-xp-text";
+
+  const nextExp = getNextLevelExp(playerMon.level, playerMon.variant || "Normal");
+  const xpPct = Math.max(0, Math.min(100, (playerMon.exp / nextExp) * 100));
+  xpInner.style.width = xpPct + "%";
+  xpText.textContent = "XP: " + playerMon.exp + "/" + nextExp;
+
+  xpBar.appendChild(xpInner);
+  xpWrap.appendChild(xpBar);
+  xpWrap.appendChild(xpText);
+  sec.appendChild(xpWrap);
+
   refreshIcons();
 }
 
@@ -1498,13 +1826,35 @@ function catchWithOrb(type){
   else { logMessage(label+" failed to catch "+getMonDisplayName(enemy)+"."); enemyTurn(); }
 }
 function getCatchChance(mon,type){
-  const s=getSpecies(mon),v=getVariant(mon); let orbMult=1; if(type==="Great")orbMult=1.3; else if(type==="Ultra")orbMult=1.6;
-  let hpFactor=(getMaxHP(mon)-mon.hp)/getMaxHP(mon); hpFactor=Math.max(0,Math.min(1,hpFactor));
-  let chance=(s.catchRate + hpFactor*0.6)*orbMult;
-  const r=v.rarityRank||1; let penaltyBase=1-(r-1)*0.03; if(penaltyBase<0.5)penaltyBase=0.5; chance*=penaltyBase;
-  if(s.isLegendary)chance*=0.5;
-  if(chance>0.97)chance=0.97; if(chance<0.01)chance=0.01; return chance;
+  const s = getSpecies(mon), v = getVariant(mon);
+  let orbMult = 1;
+  if (type === "Great")      orbMult = 1.3;
+  else if (type === "Ultra") orbMult = 1.6;
+
+  // HP factor: lower HP = easier catch
+  let hpFactor = (getMaxHP(mon) - mon.hp) / getMaxHP(mon);
+  hpFactor = Math.max(0, Math.min(1, hpFactor));
+
+  // Base chance from species + HP + orb
+  let chance = (s.catchRate + hpFactor * 0.6) * orbMult;
+
+  // Rarity penalty: every rank above Normal subtracts a chunk
+  const r = v.rarityRank || 1;
+  const rarityPenalty = (r - 1) * 0.06;  // 6% per rarity rank above 1
+  chance -= rarityPenalty;
+
+  // Legendary monsters are extra hard
+  if (s.isLegendary) {
+    chance *= 0.25;
+  }
+
+  // Clamp strictly between 1% and 90%
+  if (chance > 0.90) chance = 0.90;
+  if (chance < 0.01) chance = 0.01;
+
+  return chance;
 }
+
 function onCatchSuccess(mon,orbType){
   const caught = createMonsterInstance(mon.speciesId,mon.level,mon.variant);
   caught.hp=getMaxHP(caught);
@@ -1521,11 +1871,19 @@ function attemptRun(){
   if(battle.isTrainer){ logMessage("The trainer won't let you run!"); enemyTurn(); return; }
   if(Math.random()<0.75){ logMessage("You successfully ran away."); endBattle(false); } else { logMessage("Couldn't escape!"); enemyTurn(); }
 }
+
 function endBattle(playerWon,grantExp=true){
   const wasTrainer = battle.isTrainer;
+
   if(playerWon && wasTrainer && grantExp){
     try{
       grantTrainerBattleRewards();
+    }catch(e){
+      console.error(e);
+    }
+  }else if(playerWon && !wasTrainer && grantExp){
+    try{
+      grantWildBattleRewards();
     }catch(e){
       console.error(e);
     }
@@ -1534,6 +1892,8 @@ function endBattle(playerWon,grantExp=true){
   battle.active=false; battle.wild=null; battle.trainerTeam=[]; battle.participants=[];
   renderBattle(); renderStatus(); renderParty(); refreshIcons(); renderTrain(); saveGame();
 }
+
+
 
 function exploreWild(){
   const roll=Math.random(); if(roll<0.03){ startLegendaryEncounter(); } else { startWildEncounter(); }
@@ -1574,37 +1934,64 @@ function trainActive(){
   renderParty(); renderStatus(); renderTrain(); saveGame();
 }
 
+
 function buyItem(type){
   const inv=gameState.inventory; const p=gameState.player; let cost=0;
-  switch(type){ case "potion":cost=50;break; case "orbBasic":cost=100;break; case "orbGreat":cost=300;break; case "orbUltra":cost=800;break; case "orbUltimate":cost=5000;break; }
+  switch(type){
+    case "potion":cost=200;break;
+    case "orbBasic":cost=400;break;
+    case "orbGreat":cost=1500;break;
+    case "orbUltra":cost=4000;break;
+    case "orbUltimate":cost=25000;break;
+  }
   if(p.money<cost){ logMessage("Not enough money."); return; }
   p.money-=cost; inv[type]++; logMessage("You bought 1 "+type+"."); renderStatus(); saveGame();
 }
+
 function useStatItem(mon,key){
   const inv=gameState.inventory; if(inv[key]<=0){ logMessage("You don't have that stat item."); return; }
   inv[key]--; switch(key){ case "hpCore":mon.hpBonus+=5;break; case "atkCore":mon.atkBonus+=2;break; case "defCore":mon.defBonus+=2;break; case "spdCore":mon.spdBonus+=2;break; }
   mon.hp=getMaxHP(mon); logMessage("Used "+key+" on "+getMonDisplayName(mon)+".");
   renderParty(); renderStorage(); renderStatus(); saveGame();
 }
+
 function useXpChipOn(mon){
   const inv=gameState.inventory; if(inv.xpChip<=0){ logMessage("You don't have any XP Chips."); return; }
-  inv.xpChip--; const gain=15; addExpToMonster(mon,gain);
+  inv.xpChip--;
+  const nextReq = getNextLevelExp(mon.level, mon.variant || "Normal");
+  const gain = Math.max(50, Math.floor(nextReq * 0.35));
+  addExpToMonster(mon,gain);
   logMessage("Used XP Chip on "+getMonDisplayName(mon)+", it gained "+gain+" EXP."); renderParty(); renderStatus(); renderTrain(); saveGame();
 }
 
+
+
+
 function manualEvolve(mon){
-  const s=getSpecies(mon);
-  if(!s.evolvesTo){ logMessage("This monster cannot evolve further."); return; }
-  if(mon.level<s.evolveLevel){ logMessage(getMonDisplayName(mon)+" is not high enough level to evolve."); return; }
-  const target=getSpeciesById(s.evolvesTo);
-  mon.speciesId=target.id; ensureMonsterMoves(mon); mon.hp=getMaxHP(mon);
-  logMessage(s.name+" evolved into "+target.name+"!");
-  saveGame();
-  renderParty();
-  renderDex();
-  renderTrain();
-  refreshIcons();
+  const s = getSpecies(mon);
+  if(!s || !s.evolvesTo){
+    logMessage("This monster cannot evolve further.");
+    return;
+  }
+  const target = getSpeciesById(s.evolvesTo);
+
+  confirmEvolutionModal(mon, target, function(){
+    if(mon.level < s.evolveLevel){
+      logMessage(getMonDisplayName(mon)+" is not high enough level to evolve.");
+      return;
+    }
+    mon.speciesId = target.id;
+    ensureMonsterMoves(mon);
+    ensureMonBonuses(mon);
+    renderParty();
+    renderDex();
+    renderTrain();
+    refreshIcons();
+    saveGame();
+    logMessage(getMonDisplayName(mon)+" evolved into "+target.name+"!");
+  });
 }
+
 
 function showSection(name){
   currentSection = name;
@@ -1655,12 +2042,542 @@ if(autoTrainerToggle){
   };
 }
 
-document.querySelectorAll("#nav button").forEach(function(btn){ btn.onclick=function(){showSection(btn.dataset.section);}; });
+document.querySelectorAll("#nav button").forEach(function(btn){
+  btn.onclick = function(){
+    showSection(btn.dataset.section);
+  };
+});
 document.getElementById("export-btn").onclick = exportSave;
-document.getElementById("import-file").addEventListener("change", function(e){ const file = e.target.files[0]; if(file) importSave(file); e.target.value = ""; });
+document.getElementById("import-file").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(file) importSave(file);
+  e.target.value = "";
+});
 document.getElementById("dex-owned-only").addEventListener("change", renderDex);
 
+const cloudSaveBtn = document.getElementById("cloud-save-btn");
+if (cloudSaveBtn){
+  cloudSaveBtn.onclick = function(){ cloudSave(true); };
+}
+const cloudLoadBtn = document.getElementById("cloud-load-btn");
+if (cloudLoadBtn){
+  cloudLoadBtn.onclick = function(){ cloudLoad(); };
+}
+
 loadGame();
+startCloudAutosave();
+
+function confirmEvolutionModal(mon, next, callback){
+  const modal = document.getElementById("evo-modal");
+  const text = document.getElementById("evo-text");
+  const btnCancel = document.getElementById("evo-cancel");
+  const btnOk = document.getElementById("evo-confirm");
+
+  let variantId = next.id + "_" + (mon.variant || "Normal");
+  let hasVar = gameState.dex && gameState.dex[variantId];
+
+  text.innerHTML = getMonDisplayName(mon) + " will evolve into <br><strong>" + next.name +
+                   "</strong><br>" + (hasVar ? "You already have this variant." : "You do NOT have this variant yet.");
+
+  modal.style.display = "flex";
+
+  btnCancel.onclick = ()=>{ modal.style.display="none"; };
+  btnOk.onclick = ()=>{ modal.style.display="none"; callback(); };
+}
+
 </script>
+
+
+<div id="evo-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:9999;">
+  <div style="background:white; padding:25px; border-radius:10px; width:340px; text-align:center;
+              box-shadow:0 4px 12px rgba(0,0,0,0.3); color:#000; font-size:18px; line-height:1.4;">
+    <div id="evo-text" style="margin-bottom:20px; color:#000;"></div>
+    <button id="evo-cancel" style="margin-right:10px; padding:6px 14px;">Cancel</button>
+    <button id="evo-confirm" style="padding:6px 14px;">Evolve</button>
+  </div>
+</div>
+
+
+
+<script>
+window.addEventListener('load', function(){
+  if (typeof window.VARIANTS !== 'object') return;
+  const VARS = window.VARIANTS;
+  const CORE_VARIANT_LIST = Object.keys(VARS).sort(function(a,b){
+    const ra = (VARS[a] && VARS[a].rarityRank) || 0;
+    const rb = (VARS[b] && VARS[b].rarityRank) || 0;
+    return ra - rb;
+  });
+  const TIER_LEN = CORE_VARIANT_LIST.length || 20;
+
+  function ensureTierArrays(inv){
+    function ensure(name){
+      if (!Array.isArray(inv[name])) {
+        inv[name] = new Array(TIER_LEN).fill(0);
+      } else if (inv[name].length < TIER_LEN){
+        for (let i = inv[name].length; i < TIER_LEN; i++) inv[name][i] = 0;
+      }
+    }
+    ensure("potionTiers");
+    ensure("hpCores");
+    ensure("atkCores");
+    ensure("defCores");
+    ensure("spdCores");
+    ensure("xpCores");
+  }
+
+  function migrateFlatToTiers(inv, flatKey, arrKey){
+    const arr = inv[arrKey];
+    if (!Array.isArray(arr)) return;
+    let sum = 0;
+    for (let i=0;i<arr.length;i++) sum += arr[i] || 0;
+    const flat = typeof inv[flatKey] === "number" ? inv[flatKey] : 0;
+    if (sum === 0 && flat > 0){
+      arr[0] = flat;
+    }
+  }
+
+  function syncTotals(inv){
+    function total(name){
+      const arr = inv[name];
+      if (!Array.isArray(arr)) return 0;
+      let t = 0;
+      for (let i=0;i<arr.length;i++) t += arr[i] || 0;
+      return t;
+    }
+    inv.potion = total("potionTiers");
+    inv.hpCore = total("hpCores");
+    inv.atkCore = total("atkCores");
+    inv.defCore = total("defCores");
+    inv.spdCore = total("spdCores");
+    inv.xpChip = total("xpCores");
+  }
+
+  function ensureTieredInventory(inv){
+    if (!inv) return;
+    ensureTierArrays(inv);
+    migrateFlatToTiers(inv,"potion","potionTiers");
+    migrateFlatToTiers(inv,"hpCore","hpCores");
+    migrateFlatToTiers(inv,"atkCore","atkCores");
+    migrateFlatToTiers(inv,"defCore","defCores");
+    migrateFlatToTiers(inv,"spdCore","spdCores");
+    migrateFlatToTiers(inv,"xpChip","xpCores");
+    syncTotals(inv);
+  }
+
+  if (typeof window.newGame === "function"){
+    const origNewGame = window.newGame;
+    window.newGame = function(){
+      origNewGame();
+      if (window.gameState && gameState.inventory){
+        ensureTieredInventory(gameState.inventory);
+      }
+      if (typeof window.renderAll === "function") renderAll();
+    };
+  }
+  if (typeof window.loadGame === "function"){
+    const origLoadGame = window.loadGame;
+    window.loadGame = function(){
+      origLoadGame();
+      if (window.gameState && gameState.inventory){
+        ensureTieredInventory(gameState.inventory);
+      }
+      if (typeof window.renderAll === "function") renderAll();
+    };
+  }
+  if (window.gameState && gameState.inventory){
+    ensureTieredInventory(gameState.inventory);
+  }
+
+  const baseGetMaxHP   = window.getMaxHP;
+  const baseGetAttack  = window.getAttack;
+  const baseGetDefense = window.getDefense;
+  const baseGetSpeed   = window.getSpeed;
+
+  function rarityMultFor(mon){
+    const vKey = mon && mon.variant ? mon.variant : "Normal";
+    const v = VARS[vKey] || VARS.Normal || {rarityRank:1};
+    const r = v.rarityRank || 1;
+    return Math.pow(2, r-1);
+  }
+
+  window.getMaxHP = function(mon){
+    if (!baseGetMaxHP || !mon) return 1;
+    const raw = baseGetMaxHP(mon);
+    const bonus = mon.hpBonus || 0;
+    const base = raw - bonus;
+    const mult = rarityMultFor(mon);
+    const val = Math.round(base * mult) + bonus;
+    return val < 1 ? 1 : val;
+  };
+  window.getAttack = function(mon){
+    if (!baseGetAttack || !mon) return 1;
+    const raw = baseGetAttack(mon);
+    const bonus = mon.atkBonus || 0;
+    const base = raw - bonus;
+    const mult = rarityMultFor(mon);
+    return Math.round(base * mult) + bonus;
+  };
+  window.getDefense = function(mon){
+    if (!baseGetDefense || !mon) return 1;
+    const raw = baseGetDefense(mon);
+    const bonus = mon.defBonus || 0;
+    const base = raw - bonus;
+    const mult = rarityMultFor(mon);
+    return Math.round(base * mult) + bonus;
+  };
+  window.getSpeed = function(mon){
+    if (!baseGetSpeed || !mon) return 1;
+    const raw = baseGetSpeed(mon);
+    const bonus = mon.spdBonus || 0;
+    const base = raw - bonus;
+    const mult = rarityMultFor(mon);
+    return Math.round(base * mult) + bonus;
+  };
+
+  if (typeof window.getWildLevelRangeForVariant === "function"){
+    window.getWildLevelRangeForVariant = function(variantName,isLegendary){
+      if (isLegendary) return [40,75];
+      return [1,15];
+    };
+  }
+
+  if (typeof window.getDropChanceByRarity === "function"){
+    window.getDropChanceByRarity = function(r){
+      if (r <= 1)  return 0.20;
+      if (r <= 3)  return 0.15;
+      if (r <= 6)  return 0.10;
+      if (r <= 10) return 0.07;
+      if (r <= 15) return 0.05;
+      return 0.03;
+    };
+  }
+
+  window.grantBattleLoot = function(source, rarityRank){
+    if (!window.gameState) window.gameState = {};
+    if (typeof ensureInventory === "function") ensureInventory();
+    const inv = gameState.inventory;
+    if (!inv) return;
+    ensureTieredInventory(inv);
+
+    // Determine variant rank and index in the tier arrays
+    const rank = Math.max(1, Math.min(CORE_VARIANT_LIST.length || 20, rarityRank || 1));
+    const idx = rank - 1;
+
+    // Base chance to get *any* loot.
+    let items = 0;
+    if (Math.random() < 0.20) items = 1; // 20% for at least one item
+
+    // No extra rolls: exactly one item at 20% chance
+    if (items <= 0) {
+      console.log("grantBattleLoot: no loot (rank", rank, ")");
+      return;
+    }
+
+    function dropOne(){
+      const roll = Math.random();
+      if (roll < 0.25){
+        inv.potionTiers[idx] = (inv.potionTiers[idx] || 0) + 1;
+        logMessage("You found a Potion (" + CORE_VARIANT_LIST[idx] + ").");
+      } else if (roll < 0.55){
+        inv.hpCores[idx] = (inv.hpCores[idx] || 0) + 1;
+        logMessage("You found an HP Core (" + CORE_VARIANT_LIST[idx] + ").");
+      } else if (roll < 0.70){
+        inv.atkCores[idx] = (inv.atkCores[idx] || 0) + 1;
+        logMessage("You found an ATK Core (" + CORE_VARIANT_LIST[idx] + ").");
+      } else if (roll < 0.85){
+        inv.defCores[idx] = (inv.defCores[idx] || 0) + 1;
+        logMessage("You found a DEF Core (" + CORE_VARIANT_LIST[idx] + ").");
+      } else if (roll < 0.95){
+        inv.spdCores[idx] = (inv.spdCores[idx] || 0) + 1;
+        logMessage("You found a SPD Core (" + CORE_VARIANT_LIST[idx] + ").");
+      } else {
+        inv.xpCores[idx] = (inv.xpCores[idx] || 0) + 1;
+        logMessage("You found an XP Core (" + CORE_VARIANT_LIST[idx] + ").");
+      }
+    }
+
+    console.log("grantBattleLoot: source=%s, rank=%d, items=%d", source, rank, items);
+    for (let i = 0; i < items; i++) dropOne();
+
+    // Keep flat totals in sync for UI
+    syncTotals(inv);
+};;
+
+  if (typeof window.usePotionInBattle === "function"){
+    window.usePotionInBattle = function(){
+      const inv = gameState.inventory;
+      ensureTieredInventory(inv);
+      const arr = inv.potionTiers;
+      let idx = -1;
+      for (let i=arr.length-1;i>=0;i--){
+        if (arr[i] && arr[i] > 0){ idx = i; break; }
+      }
+      if (idx === -1){
+        logMessage("You are out of potions.");
+        return;
+      }
+      const mon = gameState.player.party[window.battle.playerIndex];
+      const maxHp = getMaxHP(mon);
+      if (mon.hp >= maxHp){
+        logMessage("HP is already full.");
+        return;
+      }
+      const vKey = CORE_VARIANT_LIST[idx] || "Normal";
+      const v = VARS[vKey] || VARS.Normal || {rarityRank:1,name:vKey};
+      const rank = v.rarityRank || (idx+1);
+      const baseHeal = 50;
+      const heal = baseHeal * Math.pow(2, rank-1);
+      const before = mon.hp;
+      mon.hp = Math.min(maxHp, mon.hp + heal);
+      const actual = mon.hp - before;
+      arr[idx]--;
+      syncTotals(inv);
+      const name = (vKey === "Normal" ? "Potion" : (v.name + " Potion"));
+      logMessage("You used a "+name+" on "+getMonDisplayName(mon)+", restoring "+actual+" HP.");
+      renderStatus();
+      renderBattle();
+      enemyTurn();
+    };
+  }
+
+  if (typeof window.useStatItem === "function"){
+    const origUseStatItem = window.useStatItem;
+    window.useStatItem = function(mon, key){
+      const inv = gameState.inventory;
+      ensureTieredInventory(inv);
+      const map = {
+        hpCore:  "hpCores",
+        atkCore: "atkCores",
+        defCore: "defCores",
+        spdCore: "spdCores"
+      };
+      const arrKey = map[key];
+      if (!arrKey){
+        return origUseStatItem(mon, key);
+      }
+      const arr = inv[arrKey];
+      let idx = -1;
+      for (let i=arr.length-1;i>=0;i--){
+        if (arr[i] && arr[i] > 0){ idx = i; break; }
+      }
+      if (idx === -1){
+        logMessage("You don't have that stat item.");
+        return;
+      }
+      const vKey = CORE_VARIANT_LIST[idx] || "Normal";
+      const v = VARS[vKey] || VARS.Normal || {rarityRank:1,name:vKey};
+      const rank = v.rarityRank || (idx+1);
+
+      mon.hpBonus  = mon.hpBonus  || 0;
+      mon.atkBonus = mon.atkBonus || 0;
+      mon.defBonus = mon.defBonus || 0;
+      mon.spdBonus = mon.spdBonus || 0;
+
+      let bonus = 0;
+      let baseLabel = "";
+      if (key === "hpCore"){
+        bonus = rank * 5;
+        mon.hpBonus += bonus;
+        baseLabel = "HP Core";
+      }else if (key === "atkCore"){
+        bonus = rank * 1;
+        mon.atkBonus += bonus;
+        baseLabel = "Attack Core";
+      }else if (key === "defCore"){
+        bonus = rank * 1;
+        mon.defBonus += bonus;
+        baseLabel = "Defense Core";
+      }else if (key === "spdCore"){
+        bonus = rank * 1;
+        mon.spdBonus += bonus;
+        baseLabel = "Speed Core";
+      }
+
+      arr[idx]--;
+      syncTotals(inv);
+      mon.hp = getMaxHP(mon);
+
+      const fullName = (vKey === "Normal" ? baseLabel : (v.name + " " + baseLabel));
+      logMessage("Used "+fullName+" on "+getMonDisplayName(mon)+" (+"+bonus+").");
+      renderParty();
+      renderStorage();
+      renderStatus();
+      saveGame();
+    };
+  }
+
+  if (typeof window.useXpChipOn === "function"){
+    window.useXpChipOn = function(mon){
+      const inv = gameState.inventory;
+      ensureTieredInventory(inv);
+      const arr = inv.xpCores;
+      let idx = -1;
+      for (let i=arr.length-1;i>=0;i--){
+        if (arr[i] && arr[i] > 0){ idx = i; break; }
+      }
+      if (idx === -1){
+        logMessage("You don't have any XP Cores.");
+        return;
+      }
+      const vKey = CORE_VARIANT_LIST[idx] || "Normal";
+      const v = VARS[vKey] || VARS.Normal || {rarityRank:1,name:vKey};
+      const rank = v.rarityRank || (idx+1);
+      const nextReq = getNextLevelExp(mon.level, mon.variant || "Normal");
+      let bonusXP = Math.floor(nextReq * (rank / 100));
+      if (bonusXP < 1) bonusXP = 1;
+      arr[idx]--;
+      syncTotals(inv);
+      addExpToMonster(mon, bonusXP);
+      const fullName = (vKey === "Normal" ? "XP Core" : (v.name + " XP Core"));
+      logMessage("Used "+fullName+" on "+getMonDisplayName(mon)+" (+"+bonusXP+" EXP, "+rank+"% of next level).");
+      renderParty();
+      renderStorage();
+      renderStatus();
+      saveGame();
+    };
+  }
+
+  if (typeof window.renderStatus === "function"){
+    const origRenderStatus = window.renderStatus;
+    window.renderStatus = function(){
+      origRenderStatus();
+      if (!window.gameState || !gameState.inventory) return;
+      const inv = gameState.inventory;
+      ensureTieredInventory(inv);
+      function describe(arr){
+        if (!Array.isArray(arr)) return "None";
+        const parts = [];
+        for (let i=0;i<arr.length && i<CORE_VARIANT_LIST.length;i++){
+          const n = arr[i] || 0;
+          if (n>0){
+            const vKey = CORE_VARIANT_LIST[i];
+            const v = VARS[vKey];
+            const name = (v && v.name) ? v.name : vKey;
+            parts.push(name+"×"+n);
+          }
+        }
+        return parts.length ? parts.join(", ") : "None";
+      }
+      const potSpan = document.getElementById("bag-potions");
+      if (potSpan) potSpan.textContent = describe(inv.potionTiers);
+      const hpSpan = document.getElementById("bag-hp-core");
+      if (hpSpan) hpSpan.textContent = describe(inv.hpCores);
+      const atkSpan = document.getElementById("bag-atk-core");
+      if (atkSpan) atkSpan.textContent = describe(inv.atkCores);
+      const defSpan = document.getElementById("bag-def-core");
+      if (defSpan) defSpan.textContent = describe(inv.defCores);
+      const spdSpan = document.getElementById("bag-spd-core");
+      if (spdSpan) spdSpan.textContent = describe(inv.spdCores);
+      const xpSpan = document.getElementById("bag-xp-chip");
+      if (xpSpan) xpSpan.textContent = describe(inv.xpCores);
+    };
+  }
+
+});
+</script>
+
+
+
+
+
+
+
+
+<script>
+// v22 clean rarity-based loot system
+</script>
+
+
+<script>
+// v23 clean, working rarity-based loot system
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+(function(){
+  function finalGrantBattleLoot(source, rarityRank){
+    console.log("FINAL finalGrantBattleLoot CALLED", source, rarityRank);
+    if (!window.gameState || !gameState.inventory) {
+      console.log("FINAL finalGrantBattleLoot: missing gameState or inventory");
+      return;
+    }
+    const inv = gameState.inventory;
+    if (inv.hpCore == null) inv.hpCore = 0;
+    inv.hpCore += 1;
+    if (typeof logMessage === "function") {
+      logMessage("You found an HP Core (FINAL forced loot).");
+    }
+    if (typeof updateBagDisplay === "function") updateBagDisplay();
+    if (typeof renderStatus === "function") renderStatus();
+    if (typeof saveGame === "function") saveGame();
+    console.log("FINAL finalGrantBattleLoot: hpCore now", inv.hpCore);
+  }
+  window.finalGrantBattleLoot = finalGrantBattleLoot;
+  console.log("FINAL finalGrantBattleLoot installed");
+})();
+</script>
+
+
+<script>
+// SAFE INSERTED FINAL PATCH
+
+function ensureInventory() {
+    if (!window.gameState) window.gameState = {};
+    if (!gameState.inventory) {
+        console.log("FINAL ensureInventory: creating minimal inventory");
+        gameState.inventory = {
+            hpCore: 0,
+            atkCore: 0,
+            defCore: 0,
+            spdCore: 0,
+            xpChip: 0
+        };
+    }
+}
+
+function finalGrantBattleLoot(source, rarityRank){
+    ensureInventory();
+    console.log("FINAL finalGrantBattleLoot CALLED", source, rarityRank);
+    const inv = gameState.inventory;
+    if (inv.hpCore == null) inv.hpCore = 0;
+    inv.hpCore += 1;
+
+    if (typeof logMessage === "function") {
+        logMessage("You found an HP Core (FINAL forced loot).");
+    }
+    if (typeof updateBagDisplay === "function") updateBagDisplay();
+    if (typeof renderStatus === "function") renderStatus();
+    if (typeof saveGame === "function") saveGame();
+
+    console.log("FINAL finalGrantBattleLoot: hpCore now", inv.hpCore);
+}
+
+window.finalGrantBattleLoot = finalGrantBattleLoot;
+console.log("FINAL finalGrantBattleLoot installed");
+</script>
+
 </body>
 </html>
