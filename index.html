@@ -1862,7 +1862,7 @@ function onCatchSuccess(mon,orbType){
   else { gameState.player.storage.push(caught); logMessage(getMonDisplayName(caught)+" was sent to storage."); }
   endBattle(true,false);
 }
-function usePotionInBattle(){
+  function usePotionInBattle(){
   const inv=gameState.inventory; if(inv.potion<=0){ logMessage("You are out of potions."); return; }
   const mon=gameState.player.party[battle.playerIndex]; if(mon.hp>=getMaxHP(mon)){ logMessage("HP is already full."); return; }
   inv.potion--; const heal=20; mon.hp=Math.min(getMaxHP(mon),mon.hp+heal); logMessage("You used a potion on "+getMonDisplayName(mon)+", restoring "+heal+" HP."); renderStatus(); enemyTurn();
@@ -2318,7 +2318,16 @@ window.addEventListener('load', function(){
         logMessage("You are out of potions.");
         return;
       }
-      const mon = gameState.player.party[window.battle.playerIndex];
+      if (!battle || !battle.active) {
+        logMessage("You can only use potions during a battle.");
+        return;
+      }
+      const monIndex = (typeof battle.playerIndex === "number") ? battle.playerIndex : (gameState.player.activeIndex || 0);
+      const mon = gameState.player.party[monIndex];
+      if (!mon) {
+        logMessage("No active monster to heal.");
+        return;
+      }
       const maxHp = getMaxHP(mon);
       if (mon.hp >= maxHp){
         logMessage("HP is already full.");
@@ -2478,106 +2487,6 @@ window.addEventListener('load', function(){
 });
 </script>
 
-
-
-
-
-
-
-
-<script>
-// v22 clean rarity-based loot system
-</script>
-
-
-<script>
-// v23 clean, working rarity-based loot system
-</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<script>
-(function(){
-  function finalGrantBattleLoot(source, rarityRank){
-    console.log("FINAL finalGrantBattleLoot CALLED", source, rarityRank);
-    if (!window.gameState || !gameState.inventory) {
-      console.log("FINAL finalGrantBattleLoot: missing gameState or inventory");
-      return;
-    }
-    const inv = gameState.inventory;
-    if (inv.hpCore == null) inv.hpCore = 0;
-    inv.hpCore += 1;
-    if (typeof logMessage === "function") {
-      logMessage("You found an HP Core (FINAL forced loot).");
-    }
-    if (typeof updateBagDisplay === "function") updateBagDisplay();
-    if (typeof renderStatus === "function") renderStatus();
-    if (typeof saveGame === "function") saveGame();
-    console.log("FINAL finalGrantBattleLoot: hpCore now", inv.hpCore);
-  }
-  window.finalGrantBattleLoot = finalGrantBattleLoot;
-  console.log("FINAL finalGrantBattleLoot installed");
-})();
-</script>
-
-
-<script>
-// SAFE INSERTED FINAL PATCH
-
-function ensureInventory() {
-    if (!window.gameState) window.gameState = {};
-    if (!gameState.inventory) {
-        console.log("FINAL ensureInventory: creating minimal inventory");
-        gameState.inventory = {
-            hpCore: 0,
-            atkCore: 0,
-            defCore: 0,
-            spdCore: 0,
-            xpChip: 0
-        };
-    }
-}
-
-function finalGrantBattleLoot(source, rarityRank){
-    ensureInventory();
-    console.log("FINAL finalGrantBattleLoot CALLED", source, rarityRank);
-    const inv = gameState.inventory;
-    if (inv.hpCore == null) inv.hpCore = 0;
-    inv.hpCore += 1;
-
-    if (typeof logMessage === "function") {
-        logMessage("You found an HP Core (FINAL forced loot).");
-    }
-    if (typeof updateBagDisplay === "function") updateBagDisplay();
-    if (typeof renderStatus === "function") renderStatus();
-    if (typeof saveGame === "function") saveGame();
-
-    console.log("FINAL finalGrantBattleLoot: hpCore now", inv.hpCore);
-}
-
-window.finalGrantBattleLoot = finalGrantBattleLoot;
-console.log("FINAL finalGrantBattleLoot installed");
-</script>
 
 </body>
 </html>
